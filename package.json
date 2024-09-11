@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "Module for orchestrating microservices using Redis",
   "main": "dist/microservices-orchestrator.module.js",
-  "types": "dist/microservices-orchestrator.module.d.ts",
+  "types": "dist/index.d.ts",
   "files": ["dist/**/*"],
   "scripts": {
     "build": "tsc"
