@@ -1,0 +1,12 @@
+{
+  "name": "@project/microservices_orchestrator",
+  "version": "0.0.1",
+  "description": "Module for orchestrating microservices using Redis",
+  "dependencies": {
+    "@nestjs/config": "^3.2.3",
+    "ioredis": "^5.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.4"
+  }
+}
