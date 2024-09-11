@@ -1,14 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
-import * as fs from 'fs';
-import * as path from 'path';
-
-interface DependencyConfig {
-    [serviceName: string]: {
-        dependsOn: string[];
-    };
-}
 
 interface RetryOptions {
     retry?: number;
@@ -30,17 +22,15 @@ export class MicroservicesOrchestratorService {
         });
 
         const redisChannel = 'service_ready';
-        const configFilePath = path.resolve(__dirname, '../../../service-dependencies.json'); // Percorso del file di configurazione
 
-        // Carichiamo il file di configurazione
-        const serviceDependencies: DependencyConfig = JSON.parse(fs.readFileSync(configFilePath, 'utf8'));
-        const dependencies = serviceDependencies[serviceName]?.dependsOn || [];
+        // Ottieni la variabile di dipendenze specifica del servizio (es. GATEWAY_DEPENDENCIES)
+        const dependencies = JSON.parse(this.configService.get<string>(`${serviceName.toUpperCase()}_DEPENDENCIES`) || '[]');
 
         let retries = 0;
         let readyCount = 0;
 
         const promise = new Promise<void>((resolve) => {
-            dependencies.forEach((dependency) => {
+            dependencies.forEach((dependency: string) => {
                 redisClient.subscribe(redisChannel, (err) => {
                     if (err) {
                         console.error('Errore nella sottoscrizione al canale Redis:', err);
