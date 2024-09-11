@@ -2,8 +2,9 @@
   "name": "@project/microservices_orchestrator",
   "version": "0.0.1",
   "description": "Module for orchestrating microservices using Redis",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/microservices-orchestrator.module.js",
+  "types": "dist/microservices-orchestrator.module.d.ts",
+  "files": [ "dist/**/*" ],
   "scripts": {
     "build": "tsc"
   },
