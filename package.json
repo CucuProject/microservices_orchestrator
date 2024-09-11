@@ -4,7 +4,7 @@
   "description": "Module for orchestrating microservices using Redis",
   "main": "dist/microservices-orchestrator.module.js",
   "types": "dist/microservices-orchestrator.module.d.ts",
-  "files": [ "dist/**/*" ],
+  "files": ["dist/**/*"],
   "scripts": {
     "build": "tsc"
   },

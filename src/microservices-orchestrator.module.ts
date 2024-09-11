@@ -4,9 +4,9 @@ import { MicroservicesOrchestratorService } from './microservices-orchestrator.s
 
 @Module({
     imports: [ConfigModule.forRoot({
-        isGlobal: true, // Configura ConfigModule come globale
+        isGlobal: true,
     })],
     providers: [MicroservicesOrchestratorService],
-    exports: [MicroservicesOrchestratorService], // Esporta il servizio per l'uso in altri moduli
+    exports: [MicroservicesOrchestratorService],
 })
 export class MicroservicesOrchestratorModule {}
