@@ -1,20 +1,4 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
 var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
     function accept(f) { if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected"); return f; }
     var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
@@ -49,13 +33,6 @@ var __runInitializers = (this && this.__runInitializers) || function (thisArg, i
     }
     return useValue ? value : void 0;
 };
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 var __setFunctionName = (this && this.__setFunctionName) || function (f, name, prefix) {
     if (typeof name === "symbol") name = name.description ? "[".concat(name.description, "]") : "";
     return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
@@ -67,8 +44,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MicroservicesOrchestratorService = void 0;
 const common_1 = require("@nestjs/common");
 const ioredis_1 = __importDefault(require("ioredis"));
-const fs = __importStar(require("fs"));
-const path = __importStar(require("path"));
 let MicroservicesOrchestratorService = (() => {
     let _classDecorators = [(0, common_1.Injectable)()];
     let _classDescriptor;
@@ -80,7 +55,6 @@ let MicroservicesOrchestratorService = (() => {
         }
         // Funzione per attendere che le dipendenze siano pronte con retry e delay personalizzabili
         async areDependenciesReady(serviceName, options = {}) {
-            var _a;
             const MAX_RETRIES = options.retry || 5; // Default a 5 se non viene specificato
             const RETRY_DELAY = options.retryDelays || 3000; // Default a 3000ms se non viene specificato
             const redisClient = new ioredis_1.default({
@@ -88,10 +62,8 @@ let MicroservicesOrchestratorService = (() => {
                 port: parseInt(this.configService.get('REDIS_SERVICE_PORT') || '6379', 10),
             });
             const redisChannel = 'service_ready';
-            const configFilePath = path.resolve(__dirname, '../../../service-dependencies.json'); // Percorso del file di configurazione
-            // Carichiamo il file di configurazione
-            const serviceDependencies = JSON.parse(fs.readFileSync(configFilePath, 'utf8'));
-            const dependencies = ((_a = serviceDependencies[serviceName]) === null || _a === void 0 ? void 0 : _a.dependsOn) || [];
+            // Ottieni la variabile di dipendenze specifica del servizio (es. GATEWAY_DEPENDENCIES)
+            const dependencies = JSON.parse(this.configService.get(`${serviceName.toUpperCase()}_DEPENDENCIES`) || '[]');
             let retries = 0;
             let readyCount = 0;
             const promise = new Promise((resolve) => {
