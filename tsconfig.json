@@ -14,5 +14,5 @@
     "./src/**/*.ts"
   ],
   "exclude": [
-    "../temp/node_modules", "dist"]
+    "../_microservices_orchestrator/node_modules", "dist"]
 }
