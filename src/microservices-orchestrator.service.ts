@@ -5,7 +5,7 @@ interface ConfigOptions {
     retry?: number;
     retryDelays?: number;
     redisServiceHost?: string;
-    redisServicePort?: number;
+    redisServicePort?: string | number;
 }
 
 @Injectable()
@@ -20,7 +20,7 @@ export class MicroservicesOrchestratorService {
         // Usa i valori forniti negli options, altrimenti default
         const redisClient = new Redis({
             host: options.redisServiceHost || 'redis',
-            port: parseInt(options.redisServicePort || '6379', 10),
+            port: typeof options.redisServicePort === 'string' ? parseInt(options.redisServicePort, 10) : options.redisServicePort || 6379,
         });
 
         const redisChannel = 'service_ready';
@@ -73,7 +73,7 @@ export class MicroservicesOrchestratorService {
     notifyServiceReady(serviceName: string, options: ConfigOptions = {}): void {
         const redisClient = new Redis({
             host: options.redisServiceHost || 'redis',
-            port: parseInt(options.redisServicePort || '6379', 10),
+            port: typeof options.redisServicePort === 'string' ? parseInt(options.redisServicePort, 10) : options.redisServicePort || 6379,
         });
 
         const redisChannel = 'service_ready';

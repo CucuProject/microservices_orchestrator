@@ -58,7 +58,7 @@ let MicroservicesOrchestratorService = (() => {
             // Usa i valori forniti negli options, altrimenti default
             const redisClient = new ioredis_1.default({
                 host: options.redisServiceHost || 'redis',
-                port: parseInt(options.redisServicePort || '6379', 10),
+                port: typeof options.redisServicePort === 'string' ? parseInt(options.redisServicePort, 10) : options.redisServicePort || 6379,
             });
             const redisChannel = 'service_ready';
             // Ottieni la variabile di dipendenze specifica del servizio (es. GATEWAY_DEPENDENCIES)
@@ -104,7 +104,7 @@ let MicroservicesOrchestratorService = (() => {
         notifyServiceReady(serviceName, options = {}) {
             const redisClient = new ioredis_1.default({
                 host: options.redisServiceHost || 'redis',
-                port: parseInt(options.redisServicePort || '6379', 10),
+                port: typeof options.redisServicePort === 'string' ? parseInt(options.redisServicePort, 10) : options.redisServicePort || 6379,
             });
             const redisChannel = 'service_ready';
             // Notifica che il servizio è pronto

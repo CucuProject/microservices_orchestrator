@@ -2,7 +2,7 @@ interface ConfigOptions {
     retry?: number;
     retryDelays?: number;
     redisServiceHost?: string;
-    redisServicePort?: string;
+    redisServicePort?: string | number;
 }
 export declare class MicroservicesOrchestratorService {
     constructor();
