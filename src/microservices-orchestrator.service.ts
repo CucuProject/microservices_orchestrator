@@ -5,7 +5,7 @@ interface ConfigOptions {
     retry?: number;
     retryDelays?: number;
     redisServiceHost?: string;
-    redisServicePort?: string;
+    redisServicePort?: number;
 }
 
 @Injectable()
