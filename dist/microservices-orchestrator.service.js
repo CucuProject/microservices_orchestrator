@@ -50,20 +50,19 @@ let MicroservicesOrchestratorService = (() => {
     let _classExtraInitializers = [];
     let _classThis;
     var MicroservicesOrchestratorService = _classThis = class {
-        constructor(configService) {
-            this.configService = configService;
-        }
+        constructor() { }
         // Funzione per attendere che le dipendenze siano pronte con retry e delay personalizzabili
         async areDependenciesReady(serviceName, options = {}) {
             const MAX_RETRIES = options.retry || 5; // Default a 5 se non viene specificato
             const RETRY_DELAY = options.retryDelays || 3000; // Default a 3000ms se non viene specificato
+            // Usa i valori forniti negli options, altrimenti default
             const redisClient = new ioredis_1.default({
-                host: this.configService.get('REDIS_SERVICE_HOST') || 'redis',
-                port: parseInt(this.configService.get('REDIS_SERVICE_PORT') || '6379', 10),
+                host: options.redisServiceHost || 'redis',
+                port: parseInt(options.redisServicePort || '6379', 10),
             });
             const redisChannel = 'service_ready';
             // Ottieni la variabile di dipendenze specifica del servizio (es. GATEWAY_DEPENDENCIES)
-            const dependencies = JSON.parse(this.configService.get(`${serviceName.toUpperCase()}_DEPENDENCIES`) || '[]');
+            const dependencies = JSON.parse(process.env[`${serviceName.toUpperCase()}_DEPENDENCIES`] || '[]');
             let retries = 0;
             let readyCount = 0;
             const promise = new Promise((resolve) => {
@@ -102,10 +101,10 @@ let MicroservicesOrchestratorService = (() => {
             }
         }
         // Funzione per notificare lo stato di prontezza
-        notifyServiceReady(serviceName) {
+        notifyServiceReady(serviceName, options = {}) {
             const redisClient = new ioredis_1.default({
-                host: this.configService.get('REDIS_SERVICE_HOST') || 'redis',
-                port: parseInt(this.configService.get('REDIS_SERVICE_PORT') || '6379', 10),
+                host: options.redisServiceHost || 'redis',
+                port: parseInt(options.redisServicePort || '6379', 10),
             });
             const redisChannel = 'service_ready';
             // Notifica che il servizio è pronto

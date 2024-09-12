@@ -1,12 +1,12 @@
-import { ConfigService } from '@nestjs/config';
-interface RetryOptions {
+interface ConfigOptions {
     retry?: number;
     retryDelays?: number;
+    redisServiceHost?: string;
+    redisServicePort?: string;
 }
 export declare class MicroservicesOrchestratorService {
-    private readonly configService;
-    constructor(configService: ConfigService);
-    areDependenciesReady(serviceName: string, options?: RetryOptions): Promise<void>;
-    notifyServiceReady(serviceName: string): void;
+    constructor();
+    areDependenciesReady(serviceName: string, options?: ConfigOptions): Promise<void>;
+    notifyServiceReady(serviceName: string, options?: ConfigOptions): void;
 }
 export {};
