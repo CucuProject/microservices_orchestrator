@@ -43,7 +43,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MicroservicesOrchestratorService = void 0;
 const common_1 = require("@nestjs/common");
-const ioredis_1 = __importDefault(require("ioredis"));
+const ioredis_1 = __importDefault(require("ioredis")); // Importa Redis come classe, non come namespace
 let MicroservicesOrchestratorService = (() => {
     let _classDecorators = [(0, common_1.Injectable)()];
     let _classDescriptor;
@@ -51,17 +51,15 @@ let MicroservicesOrchestratorService = (() => {
     let _classThis;
     var MicroservicesOrchestratorService = _classThis = class {
         constructor() { }
-        // Funzione per attendere che le dipendenze siano pronte con retry e delay personalizzabili
         async areDependenciesReady(serviceName, options = {}) {
             const MAX_RETRIES = options.retry || 5; // Default a 5 se non viene specificato
             const RETRY_DELAY = options.retryDelays || 3000; // Default a 3000ms se non viene specificato
-            // Usa i valori forniti negli options, altrimenti default
             const redisClient = new ioredis_1.default({
                 host: options.redisServiceHost || 'redis',
                 port: typeof options.redisServicePort === 'string' ? parseInt(options.redisServicePort, 10) : options.redisServicePort || 6379,
             });
+            await this.checkRedisConnection(redisClient, MAX_RETRIES, RETRY_DELAY);
             const redisChannel = 'service_ready';
-            // Ottieni la variabile di dipendenze specifica del servizio (es. GATEWAY_DEPENDENCIES)
             const dependencies = JSON.parse(process.env[`${serviceName.toUpperCase()}_DEPENDENCIES`] || '[]');
             let retries = 0;
             let readyCount = 0;
@@ -100,15 +98,31 @@ let MicroservicesOrchestratorService = (() => {
                 }
             }
         }
-        // Funzione per notificare lo stato di prontezza
         notifyServiceReady(serviceName, options = {}) {
             const redisClient = new ioredis_1.default({
                 host: options.redisServiceHost || 'redis',
                 port: typeof options.redisServicePort === 'string' ? parseInt(options.redisServicePort, 10) : options.redisServicePort || 6379,
             });
             const redisChannel = 'service_ready';
-            // Notifica che il servizio è pronto
             redisClient.publish(redisChannel, `${serviceName}_ready`);
+        }
+        async checkRedisConnection(redisClient, maxRetries, retryDelay) {
+            let retries = 0;
+            while (retries < maxRetries) {
+                try {
+                    await redisClient.ping(); // Verifica se Redis risponde
+                    console.log('Redis è pronto');
+                    return; // Redis è pronto
+                }
+                catch (err) {
+                    retries++;
+                    console.error(`Connessione a Redis fallita, tentativo ${retries}/${maxRetries}`);
+                    if (retries >= maxRetries) {
+                        throw new Error('Redis non è disponibile dopo vari tentativi.');
+                    }
+                    await new Promise((resolve) => setTimeout(resolve, retryDelay));
+                }
+            }
         }
     };
     __setFunctionName(_classThis, "MicroservicesOrchestratorService");

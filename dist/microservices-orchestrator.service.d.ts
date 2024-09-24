@@ -8,5 +8,6 @@ export declare class MicroservicesOrchestratorService {
     constructor();
     areDependenciesReady(serviceName: string, options?: ConfigOptions): Promise<void>;
     notifyServiceReady(serviceName: string, options?: ConfigOptions): void;
+    private checkRedisConnection;
 }
 export {};
