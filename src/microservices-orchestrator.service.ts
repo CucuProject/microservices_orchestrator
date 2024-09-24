@@ -13,7 +13,7 @@ export class MicroservicesOrchestratorService {
     constructor() {}
 
     async areDependenciesReady(serviceName: string, options: ConfigOptions = {}): Promise<void> {
-        console.log(`Versione 0.1`);
+        console.log(`Versione 0.2`);
         console.log(`[Orchestrator] Inizio controllo delle dipendenze per il servizio: ${serviceName}`);
         const MAX_RETRIES = options.retry || 5;
         const RETRY_DELAY = options.retryDelays || 3000;
