@@ -52,7 +52,7 @@ let MicroservicesOrchestratorService = (() => {
     var MicroservicesOrchestratorService = _classThis = class {
         constructor() { }
         async areDependenciesReady(serviceName, options = {}) {
-            console.log(`Versione 0.2`);
+            console.log(`Versione 0.3`);
             console.log(`[Orchestrator] Inizio controllo delle dipendenze per il servizio: ${serviceName}`);
             const MAX_RETRIES = options.retry || 5;
             const RETRY_DELAY = options.retryDelays || 3000;
@@ -67,21 +67,29 @@ let MicroservicesOrchestratorService = (() => {
             console.log(`[Orchestrator] Dipendenze trovate: ${dependencies}`);
             let readyCount = 0;
             const resolvedDependencies = new Set();
-            const promise = new Promise((resolve) => {
-                dependencies.forEach((dependency) => {
-                    console.log(`[Orchestrator] Sottoscrizione al canale Redis per la dipendenza: ${dependency}`);
-                    redisClient.subscribe(redisChannel, (err) => {
-                        if (err) {
-                            console.error('[Orchestrator] Errore nella sottoscrizione al canale Redis:', err);
-                        }
-                    });
-                    redisClient.on('message', (channel, message) => {
-                        // Evita di contare lo stesso messaggio più volte
+            // Crea un unico listener per il canale Redis
+            redisClient.subscribe(redisChannel, (err) => {
+                if (err) {
+                    console.error('[Orchestrator] Errore nella sottoscrizione al canale Redis:', err);
+                }
+                else {
+                    console.log(`[Orchestrator] Sottoscritto al canale ${redisChannel}`);
+                }
+            });
+            return new Promise((resolve, reject) => {
+                // Timeout per evitare blocchi infiniti
+                const timeout = setTimeout(() => {
+                    reject(new Error(`Timeout: non tutte le dipendenze sono pronte dopo ${MAX_RETRIES * RETRY_DELAY} ms.`));
+                }, MAX_RETRIES * RETRY_DELAY);
+                redisClient.on('message', (channel, message) => {
+                    dependencies.forEach((dependency) => {
                         if (message === `${dependency}_ready` && !resolvedDependencies.has(dependency)) {
                             resolvedDependencies.add(dependency);
                             readyCount++;
                             console.log(`[Orchestrator] Dipendenza pronta: ${dependency}. Pronte ${readyCount}/${dependencies.length}`);
                             if (readyCount === dependencies.length) {
+                                clearTimeout(timeout); // Cancella il timeout
+                                console.log('[Orchestrator] Tutte le dipendenze sono pronte!');
                                 resolve();
                             }
                         }
@@ -89,16 +97,10 @@ let MicroservicesOrchestratorService = (() => {
                 });
                 if (dependencies.length === 0) {
                     console.log('[Orchestrator] Nessuna dipendenza trovata, procedo...');
-                    resolve(); // Se non abbiamo dipendenze, siamo subito pronti
+                    clearTimeout(timeout); // Se non ci sono dipendenze, siamo pronti
+                    resolve();
                 }
             });
-            try {
-                await promise;
-                console.log('[Orchestrator] Tutte le dipendenze sono pronte!');
-            }
-            catch (error) {
-                console.error(`[Orchestrator] Errore durante il controllo delle dipendenze: ${error}`);
-            }
         }
         notifyServiceReady(serviceName, options = {}) {
             const redisClient = new ioredis_1.default({
