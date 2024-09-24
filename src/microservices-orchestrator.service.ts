@@ -14,8 +14,8 @@ export class MicroservicesOrchestratorService {
 
     async areDependenciesReady(serviceName: string, options: ConfigOptions = {}): Promise<void> {
         console.log(`[Orchestrator] Inizio controllo delle dipendenze per il servizio: ${serviceName}`);
-        const MAX_RETRIES = options.retry || 5; // Default a 5 se non viene specificato
-        const RETRY_DELAY = options.retryDelays || 3000; // Default a 3000ms se non viene specificato
+        const MAX_RETRIES = options.retry || 5;
+        const RETRY_DELAY = options.retryDelays || 3000;
 
         const redisClient = new Redis({
             host: options.redisServiceHost || 'redis',
@@ -31,6 +31,7 @@ export class MicroservicesOrchestratorService {
 
         let retries = 0;
         let readyCount = 0;
+        const resolvedDependencies = new Set<string>(); // Traccia delle dipendenze già risolte
 
         const promise = new Promise<void>((resolve) => {
             dependencies.forEach((dependency: string) => {
@@ -42,9 +43,9 @@ export class MicroservicesOrchestratorService {
                 });
 
                 redisClient.on('message', (channel, message) => {
-                    console.log(`[Orchestrator] Messaggio ricevuto da Redis: ${message}`);
-                    if (message === `${dependency}_ready`) {
+                    if (message === `${dependency}_ready` && !resolvedDependencies.has(dependency)) {
                         readyCount++;
+                        resolvedDependencies.add(dependency); // Aggiungi alla lista delle risolte
                         console.log(`[Orchestrator] Dipendenza pronta: ${dependency}. Pronte ${readyCount}/${dependencies.length}`);
                         if (readyCount === dependencies.length) {
                             resolve();
@@ -55,7 +56,7 @@ export class MicroservicesOrchestratorService {
 
             if (dependencies.length === 0) {
                 console.log('[Orchestrator] Nessuna dipendenza trovata, procedo...');
-                resolve(); // Se non abbiamo dipendenze, siamo subito pronti
+                resolve(); // Se non ci sono dipendenze, siamo subito pronti
             }
         });
 

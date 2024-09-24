@@ -66,6 +66,7 @@ let MicroservicesOrchestratorService = (() => {
             console.log(`[Orchestrator] Dipendenze trovate: ${dependencies}`);
             let retries = 0;
             let readyCount = 0;
+            const resolvedDependencies = new Set();
             const promise = new Promise((resolve) => {
                 dependencies.forEach((dependency) => {
                     console.log(`[Orchestrator] Sottoscrizione al canale Redis per la dipendenza: ${dependency}`);
@@ -75,9 +76,9 @@ let MicroservicesOrchestratorService = (() => {
                         }
                     });
                     redisClient.on('message', (channel, message) => {
-                        console.log(`[Orchestrator] Messaggio ricevuto da Redis: ${message}`);
-                        if (message === `${dependency}_ready`) {
+                        if (message === `${dependency}_ready` && !resolvedDependencies.has(dependency)) {
                             readyCount++;
+                            resolvedDependencies.add(dependency);
                             console.log(`[Orchestrator] Dipendenza pronta: ${dependency}. Pronte ${readyCount}/${dependencies.length}`);
                             if (readyCount === dependencies.length) {
                                 resolve();
