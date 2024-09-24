@@ -59,7 +59,7 @@ let MicroservicesOrchestratorService = (() => {
                 host: options.redisServiceHost || 'redis',
                 port: typeof options.redisServicePort === 'string' ? parseInt(options.redisServicePort, 10) : options.redisServicePort || 6379,
             });
-            console.log("TEST");
+            console.log("TEST.");
             console.log('[Orchestrator] Verifica connessione a Redis..');
             await this.checkRedisConnection(redisClient, MAX_RETRIES, RETRY_DELAY);
             const redisChannel = 'service_ready';
