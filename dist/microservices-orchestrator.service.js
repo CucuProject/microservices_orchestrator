@@ -52,6 +52,7 @@ let MicroservicesOrchestratorService = (() => {
     var MicroservicesOrchestratorService = _classThis = class {
         constructor() { }
         async areDependenciesReady(serviceName, options = {}) {
+            console.log(`Versione 0.1`);
             console.log(`[Orchestrator] Inizio controllo delle dipendenze per il servizio: ${serviceName}`);
             const MAX_RETRIES = options.retry || 5;
             const RETRY_DELAY = options.retryDelays || 3000;
