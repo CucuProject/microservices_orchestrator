@@ -43,7 +43,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MicroservicesOrchestratorService = void 0;
 const common_1 = require("@nestjs/common");
-const ioredis_1 = __importDefault(require("ioredis"));
+const ioredis_1 = __importDefault(require("ioredis")); // Importa Redis come classe, non come namespace
 let MicroservicesOrchestratorService = (() => {
     let _classDecorators = [(0, common_1.Injectable)()];
     let _classDescriptor;
@@ -76,6 +76,7 @@ let MicroservicesOrchestratorService = (() => {
                         }
                     });
                     redisClient.on('message', (channel, message) => {
+                        // Evita di contare lo stesso messaggio più volte
                         if (message === `${dependency}_ready` && !resolvedDependencies.has(dependency)) {
                             resolvedDependencies.add(dependency);
                             readyCount++;
@@ -88,7 +89,7 @@ let MicroservicesOrchestratorService = (() => {
                 });
                 if (dependencies.length === 0) {
                     console.log('[Orchestrator] Nessuna dipendenza trovata, procedo...');
-                    resolve();
+                    resolve(); // Se non abbiamo dipendenze, siamo subito pronti
                 }
             });
             try {
@@ -113,7 +114,7 @@ let MicroservicesOrchestratorService = (() => {
                 else {
                     console.log(`[Orchestrator] Messaggio pubblicato con successo su Redis. Risposta: ${reply}`);
                 }
-                redisClient.quit();
+                redisClient.quit(); // Chiudi la connessione dopo la pubblicazione
             });
         }
         async checkRedisConnection(redisClient, maxRetries, retryDelay) {
