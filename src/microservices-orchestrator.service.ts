@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import Redis from 'ioredis';
+import Redis from 'ioredis';  // Importa Redis come classe, non come namespace
 
 interface ConfigOptions {
     retry?: number;
@@ -12,20 +12,18 @@ interface ConfigOptions {
 export class MicroservicesOrchestratorService {
     constructor() {}
 
-    // Funzione per attendere che le dipendenze siano pronte con retry e delay personalizzabili
     async areDependenciesReady(serviceName: string, options: ConfigOptions = {}): Promise<void> {
         const MAX_RETRIES = options.retry || 5; // Default a 5 se non viene specificato
         const RETRY_DELAY = options.retryDelays || 3000; // Default a 3000ms se non viene specificato
 
-        // Usa i valori forniti negli options, altrimenti default
         const redisClient = new Redis({
             host: options.redisServiceHost || 'redis',
             port: typeof options.redisServicePort === 'string' ? parseInt(options.redisServicePort, 10) : options.redisServicePort || 6379,
         });
 
-        const redisChannel = 'service_ready';
+        await this.checkRedisConnection(redisClient, MAX_RETRIES, RETRY_DELAY);
 
-        // Ottieni la variabile di dipendenze specifica del servizio (es. GATEWAY_DEPENDENCIES)
+        const redisChannel = 'service_ready';
         const dependencies = JSON.parse(process.env[`${serviceName.toUpperCase()}_DEPENDENCIES`] || '[]');
 
         let retries = 0;
@@ -69,7 +67,6 @@ export class MicroservicesOrchestratorService {
         }
     }
 
-    // Funzione per notificare lo stato di prontezza
     notifyServiceReady(serviceName: string, options: ConfigOptions = {}): void {
         const redisClient = new Redis({
             host: options.redisServiceHost || 'redis',
@@ -78,7 +75,24 @@ export class MicroservicesOrchestratorService {
 
         const redisChannel = 'service_ready';
 
-        // Notifica che il servizio è pronto
         redisClient.publish(redisChannel, `${serviceName}_ready`);
+    }
+
+    private async checkRedisConnection(redisClient: Redis, maxRetries: number, retryDelay: number): Promise<void> {
+        let retries = 0;
+        while (retries < maxRetries) {
+            try {
+                await redisClient.ping(); // Verifica se Redis risponde
+                console.log('Redis è pronto');
+                return; // Redis è pronto
+            } catch (err) {
+                retries++;
+                console.error(`Connessione a Redis fallita, tentativo ${retries}/${maxRetries}`);
+                if (retries >= maxRetries) {
+                    throw new Error('Redis non è disponibile dopo vari tentativi.');
+                }
+                await new Promise((resolve) => setTimeout(resolve, retryDelay));
+            }
+        }
     }
 }
