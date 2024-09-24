@@ -7,7 +7,7 @@
     "module": "commonjs",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "removeComments": false
+    "removeComments": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
