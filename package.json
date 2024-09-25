@@ -6,7 +6,7 @@
   "types": "dist/index.d.ts",
   "files": ["dist/**/*"],
   "scripts": {
-    "build": "tsc --project tsconfig.json"
+    "build": "tsc"
   },
   "dependencies": {
     "@nestjs/config": "^3.2.3",

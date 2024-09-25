@@ -53,6 +53,7 @@ let MicroservicesOrchestratorService = (() => {
         constructor() { }
         // Funzione per verificare la prontezza delle dipendenze
         async areDependenciesReady(serviceName, options = {}) {
+            console.log("[Orchestrator] Version 0.4")
             console.log(`[Orchestrator] Inizio controllo delle dipendenze per il servizio: ${serviceName}`);
             const MAX_RETRIES = options.retry || 5;
             const RETRY_DELAY = options.retryDelays || 3000;
