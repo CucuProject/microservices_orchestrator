@@ -44,6 +44,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MicroservicesOrchestratorService = void 0;
 const common_1 = require("@nestjs/common");
 const ioredis_1 = __importDefault(require("ioredis"));
+const chalk_1 = __importDefault(require("chalk"));
+const dayjs_1 = __importDefault(require("dayjs"));
 let MicroservicesOrchestratorService = (() => {
     let _classDecorators = [(0, common_1.Injectable)()];
     let _classDescriptor;
@@ -51,9 +53,18 @@ let MicroservicesOrchestratorService = (() => {
     let _classThis;
     var MicroservicesOrchestratorService = _classThis = class {
         constructor() { }
+        // Funzione per creare la struttura dei log come NestJS
+        log(message, context, duration = '+0ms') {
+            const timestamp = (0, dayjs_1.default)().format('MM/DD/YYYY, h:mm:ss A');
+            const formattedMessage = chalk_1.default.green(message);
+            console.log(chalk_1.default.cyan(`[Orchestrator] 29 - ${timestamp}     LOG `) +
+                chalk_1.default.yellow(`[${context}] `) +
+                formattedMessage +
+                chalk_1.default.magenta(` ${duration}`));
+        }
         // Funzione per verificare la prontezza delle dipendenze
         async areDependenciesReady(serviceName, options = {}) {
-            console.log(`[Orchestrator] Inizio controllo delle dipendenze per il servizio: ${serviceName}`);
+            this.log(`Inizio controllo delle dipendenze per il servizio: ${serviceName}`, 'OrchestratorService');
             const MAX_RETRIES = options.retry || 5;
             const RETRY_DELAY = options.retryDelays || 3000;
             // Crea il client Redis
@@ -62,14 +73,14 @@ let MicroservicesOrchestratorService = (() => {
                 port: typeof options.redisServicePort === 'string' ? parseInt(options.redisServicePort, 10) : options.redisServicePort || 6379,
             });
             // Verifica la connessione a Redis
-            console.log('[Orchestrator] Verifica connessione a Redis...');
+            this.log('Verifica connessione a Redis...', 'OrchestratorService');
             await this.checkRedisConnection(redisClient, MAX_RETRIES, RETRY_DELAY);
             // Ottieni le dipendenze
             const dependencies = JSON.parse(process.env[`${serviceName.toUpperCase()}_DEPENDENCIES`] || '[]');
-            console.log(`[Orchestrator] Dipendenze trovate: ${dependencies}`);
+            this.log(`Dipendenze trovate: ${dependencies}`, 'OrchestratorService');
             // Se non ci sono dipendenze, il servizio può partire dopo la connessione a Redis
             if (dependencies.length === 0) {
-                console.log('[Orchestrator] Nessuna dipendenza trovata, il servizio può partire...');
+                this.log('Nessuna dipendenza trovata, il servizio può partire...', 'OrchestratorService');
                 return;
             }
             // Crea un set per tenere traccia delle dipendenze pronte
@@ -79,10 +90,10 @@ let MicroservicesOrchestratorService = (() => {
             const redisChannel = 'service_ready';
             redisClient.subscribe(redisChannel, (err) => {
                 if (err) {
-                    console.error('[Orchestrator] Errore nella sottoscrizione al canale Redis:', err);
+                    console.error(chalk_1.default.red('[Orchestrator] Errore nella sottoscrizione al canale Redis:', err));
                 }
                 else {
-                    console.log(`[Orchestrator] Sottoscritto al canale ${redisChannel}`);
+                    this.log(`Sottoscritto al canale ${redisChannel}`, 'OrchestratorService');
                 }
             });
             return new Promise((resolve, reject) => {
@@ -96,10 +107,10 @@ let MicroservicesOrchestratorService = (() => {
                         if (message === `${dependency}_ready` && !resolvedDependencies.has(dependency)) {
                             resolvedDependencies.add(dependency);
                             readyCount++;
-                            console.log(`[Orchestrator] Dipendenza pronta: ${dependency}. Pronte ${readyCount}/${dependencies.length}`);
+                            this.log(`Dipendenza pronta: ${dependency}. Pronte ${readyCount}/${dependencies.length}`, 'OrchestratorService');
                             if (readyCount === dependencies.length) {
                                 clearTimeout(timeout);
-                                console.log('[Orchestrator] Tutte le dipendenze sono pronte!');
+                                this.log('Tutte le dipendenze sono pronte!', 'OrchestratorService');
                                 resolve();
                             }
                         }
@@ -114,13 +125,13 @@ let MicroservicesOrchestratorService = (() => {
                 port: typeof options.redisServicePort === 'string' ? parseInt(options.redisServicePort, 10) : options.redisServicePort || 6379,
             });
             const redisChannel = 'service_ready';
-            console.log(`[Orchestrator] Notifica che il servizio ${serviceName} è pronto...`);
+            this.log(`Notifica che il servizio ${serviceName} è pronto...`, 'OrchestratorService');
             redisClient.publish(redisChannel, `${serviceName}_ready`, (err, reply) => {
                 if (err) {
-                    console.error(`[Orchestrator] Errore durante la pubblicazione del messaggio su Redis: ${err.message}`);
+                    console.error(chalk_1.default.red(`[Orchestrator] Errore durante la pubblicazione del messaggio su Redis: ${err.message}`));
                 }
                 else {
-                    console.log(`[Orchestrator] Messaggio pubblicato con successo su Redis. Risposta: ${reply}`);
+                    this.log(`Messaggio pubblicato con successo su Redis. Risposta: ${reply}`, 'OrchestratorService');
                 }
                 redisClient.quit();
             });
@@ -130,14 +141,14 @@ let MicroservicesOrchestratorService = (() => {
             let retries = 0;
             while (retries < maxRetries) {
                 try {
-                    console.log(`[Orchestrator] Tentativo di connessione a Redis (${retries + 1}/${maxRetries})...`);
+                    this.log(`Tentativo di connessione a Redis (${retries + 1}/${maxRetries})...`, 'OrchestratorService');
                     await redisClient.ping();
-                    console.log('[Orchestrator] Redis è pronto!');
+                    this.log('Redis è pronto!', 'OrchestratorService');
                     return;
                 }
                 catch (err) {
                     retries++;
-                    console.error(`[Orchestrator] Connessione a Redis fallita, tentativo ${retries}/${maxRetries}`);
+                    this.log(`Connessione a Redis fallita, tentativo ${retries}/${maxRetries}`, 'OrchestratorService');
                     if (retries >= maxRetries) {
                         throw new Error('Redis non è disponibile dopo vari tentativi.');
                     }
