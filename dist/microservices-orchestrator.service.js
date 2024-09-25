@@ -160,8 +160,9 @@ let MicroservicesOrchestratorService = (() => {
             const timestamp = (0, dayjs_1.default)().format('MM/DD/YYYY, h:mm:ss A');
             const formattedMessage = kleur_1.default.green(message); // Usa il colore verde predefinito
             const hexColor = customHex('#049b84'); // Definisci il colore esadecimale personalizzato
-            console.log(hexColor(`[Orchestrator] 29 -`) +
-                `${timestamp}     LOG ` + // Usa il colore esadecimale personalizzato
+            console.log(hexColor(`[Orchestrator] 29 - `) +
+                `${timestamp}     ` +
+                hexColor(`LOG `) + // Usa il colore esadecimale personalizzato
                 kleur_1.default.yellow(`[${context}] `) + // Context in giallo
                 formattedMessage + // Messaggio formattato in verde
                 kleur_1.default.yellow(` ${duration}`) // Durata in giallo
