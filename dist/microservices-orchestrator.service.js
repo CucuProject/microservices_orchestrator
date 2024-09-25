@@ -151,15 +151,20 @@ let MicroservicesOrchestratorService = (() => {
         }
         // Funzione di log colorata
         log(message, context, duration = '+0ms') {
-            function hexColor(hex) {
-                return `\x1b[38;2;${parseInt(hex.slice(1, 3), 16)};${parseInt(hex.slice(3, 5), 16)};${parseInt(hex.slice(5, 7), 16)}m`;
-            }
+            const customHex = (hexColor) => (text) => {
+                const r = parseInt(hexColor.slice(1, 3), 16);
+                const g = parseInt(hexColor.slice(3, 5), 16);
+                const b = parseInt(hexColor.slice(5, 7), 16);
+                return `\x1b[38;2;${r};${g};${b}m${text}\x1b[0m`;
+            };
             const timestamp = (0, dayjs_1.default)().format('MM/DD/YYYY, h:mm:ss A');
-            const formattedMessage = hexColor(message);
-            console.log(kleur_1.default.cyan(`[Orchestrator] 29 - ${kleur_1.default.white(timestamp)}     LOG `) +
-                kleur_1.default.yellow(`[${context}] `) +
-                formattedMessage +
-                kleur_1.default.magenta(` ${duration}`));
+            const formattedMessage = kleur_1.default.green(message); // Usa il colore verde predefinito
+            const hexColor = customHex('#049b84'); // Definisci il colore esadecimale personalizzato
+            console.log(hexColor(`[Orchestrator] 29 - ${kleur_1.default.white(timestamp)}     LOG `) + // Usa il colore esadecimale personalizzato
+                kleur_1.default.yellow(`[${context}] `) + // Context in giallo
+                formattedMessage + // Messaggio formattato in verde
+                kleur_1.default.yellow(` ${duration}`) // Durata in giallo
+            );
         }
     };
     __setFunctionName(_classThis, "MicroservicesOrchestratorService");
