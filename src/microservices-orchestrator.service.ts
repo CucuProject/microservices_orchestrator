@@ -122,10 +122,13 @@ export class MicroservicesOrchestratorService {
 
     // Funzione di log colorata
     private log(message: string, context: string, duration: string = '+0ms') {
+        function hexColor(hex: string) {
+            return `\x1b[38;2;${parseInt(hex.slice(1, 3), 16)};${parseInt(hex.slice(3, 5), 16)};${parseInt(hex.slice(5, 7), 16)}m`;
+        }
         const timestamp = dayjs().format('MM/DD/YYYY, h:mm:ss A');
-        const formattedMessage = kleur.green(message);
+        const formattedMessage = hexColor(message);
         console.log(
-            kleur.cyan(`[Orchestrator] 29 - ${timestamp}     LOG `) +
+            kleur.cyan(`[Orchestrator] 29 - ${kleur.white(timestamp)}     LOG `) +
             kleur.yellow(`[${context}] `) +
             formattedMessage +
             kleur.magenta(` ${duration}`)
