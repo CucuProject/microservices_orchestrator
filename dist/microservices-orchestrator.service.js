@@ -43,7 +43,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MicroservicesOrchestratorService = void 0;
 const common_1 = require("@nestjs/common");
-const ioredis_1 = __importDefault(require("ioredis")); // Importa Redis come classe, non come namespace
+const ioredis_1 = __importDefault(require("ioredis"));
 let MicroservicesOrchestratorService = (() => {
     let _classDecorators = [(0, common_1.Injectable)()];
     let _classDescriptor;
@@ -67,7 +67,6 @@ let MicroservicesOrchestratorService = (() => {
             console.log(`[Orchestrator] Dipendenze trovate: ${dependencies}`);
             let readyCount = 0;
             const resolvedDependencies = new Set();
-            // Crea un unico listener per il canale Redis
             redisClient.subscribe(redisChannel, (err) => {
                 if (err) {
                     console.error('[Orchestrator] Errore nella sottoscrizione al canale Redis:', err);
@@ -77,7 +76,6 @@ let MicroservicesOrchestratorService = (() => {
                 }
             });
             return new Promise((resolve, reject) => {
-                // Timeout per evitare blocchi infiniti
                 const timeout = setTimeout(() => {
                     reject(new Error(`Timeout: non tutte le dipendenze sono pronte dopo ${MAX_RETRIES * RETRY_DELAY} ms.`));
                 }, MAX_RETRIES * RETRY_DELAY);
@@ -88,7 +86,7 @@ let MicroservicesOrchestratorService = (() => {
                             readyCount++;
                             console.log(`[Orchestrator] Dipendenza pronta: ${dependency}. Pronte ${readyCount}/${dependencies.length}`);
                             if (readyCount === dependencies.length) {
-                                clearTimeout(timeout); // Cancella il timeout
+                                clearTimeout(timeout);
                                 console.log('[Orchestrator] Tutte le dipendenze sono pronte!');
                                 resolve();
                             }
@@ -97,7 +95,7 @@ let MicroservicesOrchestratorService = (() => {
                 });
                 if (dependencies.length === 0) {
                     console.log('[Orchestrator] Nessuna dipendenza trovata, procedo...');
-                    clearTimeout(timeout); // Se non ci sono dipendenze, siamo pronti
+                    clearTimeout(timeout);
                     resolve();
                 }
             });
@@ -116,7 +114,7 @@ let MicroservicesOrchestratorService = (() => {
                 else {
                     console.log(`[Orchestrator] Messaggio pubblicato con successo su Redis. Risposta: ${reply}`);
                 }
-                redisClient.quit(); // Chiudi la connessione dopo la pubblicazione
+                redisClient.quit();
             });
         }
         async checkRedisConnection(redisClient, maxRetries, retryDelay) {
