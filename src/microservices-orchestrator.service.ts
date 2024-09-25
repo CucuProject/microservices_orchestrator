@@ -134,7 +134,8 @@ export class MicroservicesOrchestratorService {
         const hexColor = customHex('#049b84'); // Definisci il colore esadecimale personalizzato
 
         console.log(
-            hexColor(`[Orchestrator] 29 - ${timestamp}     LOG `) + // Usa il colore esadecimale personalizzato
+            hexColor(`[Orchestrator] 29 -`) +
+            `${timestamp}     LOG ` + // Usa il colore esadecimale personalizzato
             kleur.yellow(`[${context}] `) + // Context in giallo
             formattedMessage + // Messaggio formattato in verde
             kleur.yellow(` ${duration}`) // Durata in giallo
