@@ -45,7 +45,9 @@ exports.MicroservicesOrchestratorService = void 0;
 const common_1 = require("@nestjs/common");
 const ioredis_1 = __importDefault(require("ioredis"));
 const dayjs_1 = __importDefault(require("dayjs"));
-const kleur_1 = __importDefault(require("kleur")); // Importa kleur per i log colorati
+const kleur_1 = __importDefault(require("kleur"));
+// Forza kleur ad abilitare i colori
+kleur_1.default.enabled = true;
 let MicroservicesOrchestratorService = (() => {
     let _classDecorators = [(0, common_1.Injectable)()];
     let _classDescriptor;

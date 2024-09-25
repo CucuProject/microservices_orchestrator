@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import Redis from 'ioredis';
 import dayjs from 'dayjs';
-import kleur from 'kleur'; // Importa kleur per i log colorati
+import kleur from 'kleur';
+
+// Forza kleur ad abilitare i colori
+kleur.enabled = true;
 
 interface ConfigOptions {
     retry?: number;
