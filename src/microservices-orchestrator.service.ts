@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import Redis from 'ioredis';
 import dayjs from 'dayjs';
 import kleur from 'kleur';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Force kleur to enable colors
 kleur.enabled = true;
@@ -12,14 +14,65 @@ interface ConfigOptions {
     redisServiceHost?: string;
     redisServicePort?: string | number;
     persistentCheck?: boolean; // New option for persistent checking
+
+    // (Optional) parametri per TLS
+    redisTlsClientCert?: string;
+    redisTlsClientKey?: string;
+    redisTlsCaCert?: string;
 }
 
 @Injectable()
 export class MicroservicesOrchestratorService {
     private static readonly READY_KEY_PREFIX = 'service_ready:';
     private static readonly READY_CHANNEL = 'service_ready';
-    
+
     constructor() {}
+
+    /**
+     * Crea un'istanza di ioredis configurata.
+     * Se i parametri TLS sono presenti, aggiunge { tls: {...} } nelle options.
+     */
+    private createRedisClient(options: ConfigOptions): Redis {
+        const host = options.redisServiceHost || 'redis';
+        const port =
+          typeof options.redisServicePort === 'string'
+            ? parseInt(options.redisServicePort, 10)
+            : options.redisServicePort || 6379;
+
+        // Proviamo a leggere i path TLS
+        const hasTls =
+          options.redisTlsClientCert &&
+          options.redisTlsClientKey &&
+          options.redisTlsCaCert;
+
+        if (hasTls) {
+            // Lettura file
+            const cert = fs.readFileSync(options.redisTlsClientCert);
+            const key = fs.readFileSync(options.redisTlsClientKey);
+            const ca  = fs.readFileSync(options.redisTlsCaCert);
+
+            this.log(`[Orchestrator] Using TLS for Redis connection`, 'RedisTLS');
+
+            return new Redis({
+                host,
+                port,
+                tls: {
+                    cert,
+                    key,
+                    ca: [ca],
+                    // se serve
+                    rejectUnauthorized: true,
+                },
+            });
+        }
+
+        // altrimenti plain
+        this.log(
+          `[Orchestrator] Using plain TCP (no TLS) for Redis at ${host}:${port}`,
+          'RedisConnection'
+        );
+        return new Redis({ host, port });
+    }
 
     // Function to check if dependencies are ready
     async areDependenciesReady(serviceName: string, options: ConfigOptions = {}): Promise<void> {
@@ -29,12 +82,7 @@ export class MicroservicesOrchestratorService {
         const PERSISTENT_CHECK = options.persistentCheck || false;
 
         // Create Redis client
-        const redisClient = new Redis({
-            host: options.redisServiceHost || 'redis',
-            port: typeof options.redisServicePort === 'string' 
-                ? parseInt(options.redisServicePort, 10) 
-                : options.redisServicePort || 6379,
-        });
+        const redisClient = this.createRedisClient(options);
 
         // Verify Redis connection
         this.log('[Orchestrator] Verifying Redis connection...', 'RedisConnection');
@@ -58,7 +106,7 @@ export class MicroservicesOrchestratorService {
         // Check Redis for already ready services
         for (const dependency of dependencies) {
             const isReady = await redisClient.exists(`${MicroservicesOrchestratorService.READY_KEY_PREFIX}${dependency}`);
-            
+
             if (isReady) {
                 readyDependencies.add(dependency);
                 readyCount++;
@@ -96,7 +144,7 @@ export class MicroservicesOrchestratorService {
                         readyDependencies.add(dependency);
                         readyCount++;
                         this.log(`[Orchestrator] Dependency ready: ${dependency}. Ready ${readyCount}/${dependencies.length}`, 'DependencyChecker');
-                        
+
                         if (readyCount === dependencies.length) {
                             clearTimeout(timeout);
                             this.log('[Orchestrator] All dependencies are ready!', 'DependencyChecker');
@@ -113,25 +161,20 @@ export class MicroservicesOrchestratorService {
 
     // Function to notify that the service is ready
     async notifyServiceReady(serviceName: string, options: ConfigOptions = {}): Promise<void> {
-        const redisClient = new Redis({
-            host: options.redisServiceHost || 'redis',
-            port: typeof options.redisServicePort === 'string' 
-                ? parseInt(options.redisServicePort, 10) 
-                : options.redisServicePort || 6379,
-        });
+        const redisClient = this.createRedisClient(options);
 
         const readyKey = `${MicroservicesOrchestratorService.READY_KEY_PREFIX}${serviceName}`;
         const readyChannel = MicroservicesOrchestratorService.READY_CHANNEL;
-        
+
         this.log(`[Orchestrator] Notifying that service ${serviceName} is ready...`, 'RedisNotification');
-        
+
         try {
             // Store service ready status in Redis with 24h expiry (configurable)
             await redisClient.set(readyKey, 'ready', 'EX', 86400); // 24 hours expiry
-            
+
             // Publish message to channel
             const reply = await redisClient.publish(readyChannel, `${serviceName}_ready`);
-            
+
             this.log(`[Orchestrator] Message successfully published to Redis. Reply: ${reply}`, 'RedisNotification');
         } catch (err) {
             if (err instanceof Error) {
@@ -146,19 +189,15 @@ export class MicroservicesOrchestratorService {
 
     // Function to check if specific services are ready (useful for gateway)
     async areServicesReady(serviceNames: string[], options: ConfigOptions = {}): Promise<Map<string, boolean>> {
-        const redisClient = new Redis({
-            host: options.redisServiceHost || 'redis',
-            port: typeof options.redisServicePort === 'string' 
-                ? parseInt(options.redisServicePort, 10) 
-                : options.redisServicePort || 6379,
-        });
-
+        const redisClient = this.createRedisClient(options);
         const result = new Map<string, boolean>();
-        
+
         try {
             // Check each service in Redis
             for (const serviceName of serviceNames) {
-                const isReady = await redisClient.exists(`${MicroservicesOrchestratorService.READY_KEY_PREFIX}${serviceName}`);
+                const isReady = await redisClient.exists(
+                  `${MicroservicesOrchestratorService.READY_KEY_PREFIX}${serviceName}`
+                );
                 result.set(serviceName, isReady === 1);
             }
         } catch (err) {
@@ -170,18 +209,13 @@ export class MicroservicesOrchestratorService {
         } finally {
             redisClient.quit();
         }
-        
+
         return result;
     }
 
     // Reset service status (useful during testing or manual intervention)
     async resetServiceStatus(serviceName: string, options: ConfigOptions = {}): Promise<void> {
-        const redisClient = new Redis({
-            host: options.redisServiceHost || 'redis',
-            port: typeof options.redisServicePort === 'string' 
-                ? parseInt(options.redisServicePort, 10) 
-                : options.redisServicePort || 6379,
-        });
+        const redisClient = this.createRedisClient(options);
 
         try {
             await redisClient.del(`${MicroservicesOrchestratorService.READY_KEY_PREFIX}${serviceName}`);
@@ -231,12 +265,12 @@ export class MicroservicesOrchestratorService {
         const hexColor = customHex('#049b84');
 
         console.log(
-            hexColor(`[Orchestrator] - `) +
-            `${timestamp}     ` +
-            hexColor(`LOG `) +
-            kleur.yellow(`[${context}] `) +
-            formattedMessage +
-            kleur.yellow(` ${duration}`)
+          hexColor(`[Orchestrator] - `) +
+          `${timestamp}     ` +
+          hexColor(`LOG `) +
+          kleur.yellow(`[${context}] `) +
+          formattedMessage +
+          kleur.yellow(` ${duration}`)
         );
     }
 }
